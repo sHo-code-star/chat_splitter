@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chat Splitter</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0c;
+    --surface: #141418;
+    --surface-2: #1c1c22;
+    --border: #2a2a33;
+    --buyer: #005c4b;
+    --buyer-light: #00a884;
+    --seller: #1a1a2e;
+    --seller-accent: #6c5ce7;
+    --text: #e8e6e3;
+    --text-dim: #8b8a88;
+    --copy-flash: #00a884;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+    position: relative;
+  }
+
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: -1.2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 3px;
+    background: linear-gradient(90deg, var(--buyer-light), var(--seller-accent));
+    border-radius: 2px;
+  }
+
+  h1 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    background: linear-gradient(135deg, var(--buyer-light), var(--seller-accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  h1 span { font-weight: 400; opacity: 0.7; }
+
+  .subtitle {
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+  }
+
+  /* Input Section */
+  .input-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    transition: border-color 0.3s;
+  }
+
+  .input-section:focus-within {
+    border-color: var(--seller-accent);
+  }
+
+  .input-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .input-label .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--seller-accent);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  textarea {
+    width: 100%;
+    min-height: 200px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    line-height: 1.7;
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  textarea::placeholder { color: #444; }
+  textarea:focus { border-color: var(--seller-accent); }
+
+  .actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+
+  .btn {
+    padding: 0.7rem 1.5rem;
+    border: none;
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--buyer-light), #00c896);
+    color: #000;
+    flex: 1;
+  }
+
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(0, 168, 132, 0.3); }
+  .btn-primary:active { transform: translateY(0); }
+
+  .btn-secondary {
+    background: var(--surface-2);
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+  }
+
+  .btn-secondary:hover { color: var(--text); border-color: var(--text-dim); }
+
+  /* Chat Display */
+  .chat-container {
+    display: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .chat-container.active { display: block; animation: slideUp 0.4s ease; }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .chat-header {
+    background: var(--surface-2);
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .chat-header-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .chat-header .legend {
+    display: flex;
+    gap: 1.2rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+
+  .legend-dot.buyer { background: var(--buyer-light); }
+  .legend-dot.seller { background: var(--seller-accent); }
+
+  .chat-body {
+    padding: 1.5rem;
+    max-height: 70vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    background:
+      radial-gradient(circle at 20% 50%, rgba(0, 168, 132, 0.03) 0%, transparent 50%),
+      radial-gradient(circle at 80% 50%, rgba(108, 92, 231, 0.03) 0%, transparent 50%),
+      var(--bg);
+  }
+
+  .chat-body::-webkit-scrollbar { width: 4px; }
+  .chat-body::-webkit-scrollbar-track { background: transparent; }
+  .chat-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .message {
+    max-width: 78%;
+    padding: 0.7rem 1rem;
+    border-radius: 12px;
+    font-size: 0.88rem;
+    line-height: 1.55;
+    position: relative;
+    animation: msgIn 0.3s ease;
+    word-wrap: break-word;
+  }
+
+  @keyframes msgIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .message.buyer {
+    align-self: flex-start;
+    background: var(--buyer);
+    border-bottom-left-radius: 4px;
+  }
+
+  .message.seller {
+    align-self: flex-end;
+    background: var(--seller);
+    border: 1px solid #2a2a40;
+    border-bottom-right-radius: 4px;
+  }
+
+  .message .role-tag {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.3rem;
+    display: block;
+  }
+
+  .message.buyer .role-tag { color: var(--buyer-light); }
+  .message.seller .role-tag { color: var(--seller-accent); }
+
+  .message .copy-btn {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: rgba(0,0,0,0.4);
+    border: none;
+    color: var(--text-dim);
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: all 0.2s;
+    font-size: 0.75rem;
+  }
+
+  .message:hover .copy-btn { opacity: 1; }
+  .message .copy-btn:hover { background: rgba(0,0,0,0.7); color: var(--text); }
+
+  .message .copy-btn.copied {
+    opacity: 1;
+    color: var(--copy-flash);
+    background: rgba(0, 168, 132, 0.2);
+  }
+
+  .copy-all-row {
+    padding: 0.75rem 1.5rem;
+    border-top: 1px solid var(--border);
+    background: var(--surface-2);
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .copy-all-btn {
+    padding: 0.5rem 1rem;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-dim);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+  }
+
+  .copy-all-btn:hover { border-color: var(--text-dim); color: var(--text); }
+  .copy-all-btn.copied { border-color: var(--copy-flash); color: var(--copy-flash); }
+
+  /* Format hint */
+  .format-hint {
+    background: var(--surface-2);
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.2rem;
+    margin-top: 0.75rem;
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+
+  .format-hint code {
+    font-family: 'JetBrains Mono', monospace;
+    background: rgba(108, 92, 231, 0.15);
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    color: var(--seller-accent);
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--surface-2);
+    border: 1px solid var(--copy-flash);
+    color: var(--copy-flash);
+    padding: 0.6rem 1.2rem;
+    border-radius: 10px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    z-index: 100;
+    transition: transform 0.3s ease;
+    pointer-events: none;
+  }
+
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 600px) {
+    .container { padding: 1rem; }
+    .message { max-width: 88%; }
+    h1 { font-size: 1.4rem; }
+    .actions { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>Chat Splitter <span>/ fiverr</span></h1>
+    <p class="subtitle">Paste AI-generated conversation → visual chat view</p>
+  </header>
+
+  <div class="input-section">
+    <div class="input-label"><span class="dot"></span> Paste conversation</div>
+    <textarea id="rawInput" placeholder="Buyer: Hi, I need a logo designed for my startup...
+Seller: Hey! I'd love to help. What style are you looking for?
+Buyer: Something minimal and modern..."></textarea>
+
+    <div class="format-hint">
+      Supported formats: lines starting with <code>Buyer:</code> or <code>Seller:</code> — also handles <code>**Buyer:**</code> markdown bold variants. Multi-line messages group until next role tag.
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" onclick="parseChat()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M9 9h6M9 13h4"/></svg>
+        Split &amp; Render
+      </button>
+      <button class="btn btn-secondary" onclick="clearAll()">Clear</button>
+    </div>
+  </div>
+
+  <div class="chat-container" id="chatContainer">
+    <div class="chat-header">
+      <div class="chat-header-left">
+        <div class="legend">
+          <span class="legend-item"><span class="legend-dot buyer"></span> Buyer</span>
+          <span class="legend-item"><span class="legend-dot seller"></span> Seller</span>
+        </div>
+      </div>
+      <span style="font-size:0.7rem;color:var(--text-dim)" id="msgCount"></span>
+    </div>
+    <div class="chat-body" id="chatBody"></div>
+    <div class="copy-all-row">
+      <button class="copy-all-btn" onclick="copyAllRole('buyer')">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+        Copy all Buyer
+      </button>
+      <button class="copy-all-btn" onclick="copyAllRole('seller')">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+        Copy all Seller
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">Copied to clipboard ✓</div>
+
+<script>
+let messages = [];
+
+function parseChat() {
+  const raw = document.getElementById('rawInput').value.trim();
+  if (!raw) return;
+
+  messages = [];
+  const lines = raw.split('\n');
+
+  // Regex: captures Buyer/Seller with optional markdown bold (**)
+  const roleRegex = /^\*{0,2}(buyer|seller)\s*[:\-]\*{0,2}\s*/i;
+
+  let current = null;
+
+  for (const line of lines) {
+    const match = line.match(roleRegex);
+    if (match) {
+      if (current) messages.push(current);
+      const role = match[1].toLowerCase();
+      const text = line.replace(roleRegex, '').trim();
+      current = { role, text };
+    } else if (current) {
+      // continuation line
+      const trimmed = line.trim();
+      if (trimmed) current.text += '\n' + trimmed;
+    }
+  }
+  if (current) messages.push(current);
+
+  renderChat();
+}
+
+function renderChat() {
+  const body = document.getElementById('chatBody');
+  const container = document.getElementById('chatContainer');
+  body.innerHTML = '';
+
+  if (messages.length === 0) return;
+
+  messages.forEach((msg, i) => {
+    const div = document.createElement('div');
+    div.className = `message ${msg.role}`;
+    div.style.animationDelay = `${i * 0.05}s`;
+
+    const tag = document.createElement('span');
+    tag.className = 'role-tag';
+    tag.textContent = msg.role;
+
+    const text = document.createElement('span');
+    text.textContent = msg.text;
+
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'copy-btn';
+    copyBtn.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>`;
+    copyBtn.onclick = () => copyText(msg.text, copyBtn);
+
+    div.appendChild(tag);
+    div.appendChild(text);
+    div.appendChild(copyBtn);
+    body.appendChild(div);
+  });
+
+  document.getElementById('msgCount').textContent = `${messages.length} messages`;
+  container.classList.add('active');
+  body.scrollTop = body.scrollHeight;
+}
+
+function copyText(text, btn) {
+  navigator.clipboard.writeText(text).then(() => {
+    btn.classList.add('copied');
+    btn.innerHTML = '✓';
+    showToast();
+    setTimeout(() => {
+      btn.classList.remove('copied');
+      btn.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>`;
+    }, 1500);
+  });
+}
+
+function copyAllRole(role) {
+  const texts = messages.filter(m => m.role === role).map(m => m.text).join('\n\n');
+  const btns = document.querySelectorAll('.copy-all-btn');
+  const btn = role === 'buyer' ? btns[0] : btns[1];
+
+  navigator.clipboard.writeText(texts).then(() => {
+    btn.classList.add('copied');
+    const orig = btn.innerHTML;
+    btn.textContent = 'Copied ✓';
+    showToast();
+    setTimeout(() => {
+      btn.classList.remove('copied');
+      btn.innerHTML = orig;
+    }, 1500);
+  });
+}
+
+function showToast() {
+  const t = document.getElementById('toast');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+function clearAll() {
+  document.getElementById('rawInput').value = '';
+  document.getElementById('chatContainer').classList.remove('active');
+  messages = [];
+}
+</script>
+</body>
+</html>
